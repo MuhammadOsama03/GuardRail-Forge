@@ -1,10 +1,23 @@
-from fastapi import Depends, FastAPI
+from time import perf_counter
+from uuid import uuid4
+
+from fastapi import Depends, FastAPI, Request
 
 from guardrail_forge.auth import require_api_key
 from guardrail_forge.models import BatchScanRequest, BatchScanResponse, ScanRequest, ScanResponse
 from guardrail_forge.scanner import scan_text
 
 app = FastAPI(title="GuardRail Forge", version="0.1.0")
+
+
+@app.middleware("http")
+async def request_context(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID") or str(uuid4())
+    started = perf_counter()
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    response.headers["Server-Timing"] = f'app;dur={(perf_counter() - started) * 1000:.2f}'
+    return response
 
 
 @app.get("/health")
