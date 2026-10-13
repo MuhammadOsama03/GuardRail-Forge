@@ -29,3 +29,12 @@ class ScanResponse(BaseModel):
     findings: list[Finding]
     redacted_text: str
 
+
+class BatchScanRequest(BaseModel):
+    items: list[ScanRequest] = Field(min_length=1, max_length=100)
+
+
+class BatchScanResponse(BaseModel):
+    safe: bool
+    results: list[ScanResponse]
+
