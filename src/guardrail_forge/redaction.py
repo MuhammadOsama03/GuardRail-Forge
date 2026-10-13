@@ -8,6 +8,11 @@ SECRET_PATTERNS = (
     ("secret.bearer_token", re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/-]{16,}={0,2}")),
 )
 
+PII_PATTERNS = (
+    ("pii.email", re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)),
+    ("pii.credit_card", re.compile(r"(?<!\d)(?:\d[ -]*?){13,19}(?!\d)")),
+)
+
 
 def find_secrets(text: str) -> list[Finding]:
     findings: list[Finding] = []
@@ -19,6 +24,23 @@ def find_secrets(text: str) -> list[Finding]:
                     category="secret_exposure",
                     severity=Severity.CRITICAL,
                     message="Potential credential exposure",
+                    start=match.start(),
+                    end=match.end(),
+                )
+            )
+    return sorted(findings, key=lambda finding: finding.start)
+
+
+def find_pii(text: str) -> list[Finding]:
+    findings: list[Finding] = []
+    for rule_id, pattern in PII_PATTERNS:
+        for match in pattern.finditer(text):
+            findings.append(
+                Finding(
+                    rule_id=rule_id,
+                    category="personal_data",
+                    severity=Severity.HIGH,
+                    message="Potential personal data exposure",
                     start=match.start(),
                     end=match.end(),
                 )
