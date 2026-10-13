@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
+from guardrail_forge.auth import require_api_key
 from guardrail_forge.models import BatchScanRequest, BatchScanResponse, ScanRequest, ScanResponse
 from guardrail_forge.scanner import scan_text
 
@@ -11,12 +12,12 @@ def health() -> dict[str, str]:
     return {"status": "ok", "service": "guardrail-forge"}
 
 
-@app.post("/v1/scan", response_model=ScanResponse)
+@app.post("/v1/scan", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
 def scan(payload: ScanRequest) -> ScanResponse:
     return scan_text(payload.text)
 
 
-@app.post("/v1/scan/batch", response_model=BatchScanResponse)
+@app.post("/v1/scan/batch", response_model=BatchScanResponse, dependencies=[Depends(require_api_key)])
 def scan_batch(payload: BatchScanRequest) -> BatchScanResponse:
     results = [scan_text(item.text) for item in payload.items]
     return BatchScanResponse(safe=all(result.safe for result in results), results=results)
