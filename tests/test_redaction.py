@@ -1,3 +1,4 @@
+from guardrail_forge.models import Finding, Severity
 from guardrail_forge.redaction import find_pii, find_secrets, redact
 
 
@@ -32,3 +33,11 @@ def test_detects_formatted_card_number() -> None:
 
 def test_ignores_number_that_fails_card_checksum() -> None:
     assert find_pii("Reference 4111 1111 1111 1112") == []
+
+
+def test_redaction_merges_overlapping_findings() -> None:
+    findings = [
+        Finding(rule_id="a", category="secret", severity=Severity.HIGH, message="a", start=0, end=6),
+        Finding(rule_id="b", category="secret", severity=Severity.HIGH, message="b", start=4, end=10),
+    ]
+    assert redact("0123456789 safe", findings) == "[REDACTED] safe"

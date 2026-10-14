@@ -72,8 +72,14 @@ def find_pii(text: str) -> list[Finding]:
 
 
 def redact(text: str, findings: list[Finding]) -> str:
+    spans: list[tuple[int, int]] = []
+    for finding in sorted(findings, key=lambda item: (item.start, item.end)):
+        if spans and finding.start <= spans[-1][1]:
+            spans[-1] = (spans[-1][0], max(spans[-1][1], finding.end))
+        else:
+            spans.append((finding.start, finding.end))
     result = text
-    for finding in sorted(findings, key=lambda item: item.start, reverse=True):
-        result = result[: finding.start] + "[REDACTED]" + result[finding.end :]
+    for start, end in reversed(spans):
+        result = result[:start] + "[REDACTED]" + result[end:]
     return result
 
