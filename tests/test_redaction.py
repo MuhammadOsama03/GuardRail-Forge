@@ -12,6 +12,14 @@ def test_preserves_safe_text() -> None:
     assert redact("safe", []) == "safe"
 
 
+def test_detects_cloud_and_private_key_credentials() -> None:
+    text = "AKIAIOSFODNN7EXAMPLE -----BEGIN PRIVATE KEY-----"
+    assert [item.rule_id for item in find_secrets(text)] == [
+        "secret.aws_access_key",
+        "secret.private_key",
+    ]
+
+
 def test_detects_email_address() -> None:
     findings = find_pii("Contact analyst@example.com")
     assert findings[0].rule_id == "pii.email"

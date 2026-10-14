@@ -6,6 +6,12 @@ SECRET_PATTERNS = (
     ("secret.openai_key", re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b")),
     ("secret.github_token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}\b")),
     ("secret.bearer_token", re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/-]{16,}={0,2}")),
+    ("secret.aws_access_key", re.compile(r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b")),
+    ("secret.slack_token", re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{20,}\b")),
+    (
+        "secret.private_key",
+        re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
+    ),
 )
 
 PII_PATTERNS = (
