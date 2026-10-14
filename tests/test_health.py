@@ -18,6 +18,10 @@ def test_preserves_client_request_id() -> None:
     assert response.headers["x-request-id"] == "trace-123"
 
 
+def test_reports_service_version() -> None:
+    assert TestClient(app).get("/version").json() == {"version": "0.2.0"}
+
+
 def test_rejects_oversized_declared_body() -> None:
     response = TestClient(app).post(
         "/v1/scan",

@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from guardrail_forge.auth import require_api_key
 from guardrail_forge.config import get_settings
+from guardrail_forge import __version__
 from guardrail_forge.models import (
     BatchScanRequest,
     BatchScanResponse,
@@ -17,7 +18,7 @@ from guardrail_forge.models import (
 from guardrail_forge.policy import SecurityPolicy
 from guardrail_forge.scanner import scan_text
 
-app = FastAPI(title="GuardRail Forge", version="0.1.0")
+app = FastAPI(title="GuardRail Forge", version=__version__)
 
 
 def _parse_content_length(value: str | None) -> int | None:
@@ -42,7 +43,7 @@ async def request_context(request: Request, call_next):
         )
     elif content_length is not None and content_length > get_settings().max_request_bytes:
         response = JSONResponse(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             content={"detail": "Request body too large"},
         )
     else:
@@ -58,6 +59,11 @@ async def request_context(request: Request, call_next):
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "guardrail-forge"}
+
+
+@app.get("/version")
+def version() -> dict[str, str]:
+    return {"version": __version__}
 
 
 @app.post("/v1/scan", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
