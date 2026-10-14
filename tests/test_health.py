@@ -25,3 +25,12 @@ def test_rejects_oversized_declared_body() -> None:
         json={"text": "hello"},
     )
     assert response.status_code == 413
+
+
+def test_rejects_invalid_content_length() -> None:
+    response = TestClient(app).post(
+        "/v1/scan",
+        headers={"content-length": "not-a-number"},
+        content=b'{"text":"hello"}',
+    )
+    assert response.status_code == 400
