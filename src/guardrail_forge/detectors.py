@@ -31,6 +31,20 @@ PROMPT_INJECTION_RULES = (
         "Attempt to replace the assistant role",
         r"\b(you are now|act as|pretend to be)\b.{0,40}\b(unrestricted|jailbroken|developer mode)\b",
     ),
+    PatternRule.compile(
+        "prompt.encoded_payload",
+        "prompt_injection",
+        Severity.HIGH,
+        "Instruction requests decoding and following an encoded payload",
+        r"\b(decode|decrypt)\b.{0,40}\b(base64|encoded)\b.{0,40}\b(execute|follow|obey|run)\b",
+    ),
+    PatternRule.compile(
+        "prompt.role_delimiter",
+        "prompt_injection",
+        Severity.HIGH,
+        "Untrusted content contains a privileged role delimiter",
+        r"(?:<\|\s*(?:system|developer)\s*\|>|\[\s*(?:system|developer)\s*\])",
+    ),
 )
 
 
