@@ -28,3 +28,7 @@ def test_detects_email_address() -> None:
 def test_detects_formatted_card_number() -> None:
     findings = find_pii("Card 4111 1111 1111 1111")
     assert findings[0].rule_id == "pii.credit_card"
+
+
+def test_ignores_number_that_fails_card_checksum() -> None:
+    assert find_pii("Reference 4111 1111 1111 1112") == []

@@ -20,6 +20,21 @@ PII_PATTERNS = (
 )
 
 
+def _passes_luhn(value: str) -> bool:
+    digits = [int(character) for character in value if character.isdigit()]
+    if not 13 <= len(digits) <= 19:
+        return False
+    parity = len(digits) % 2
+    total = 0
+    for index, digit in enumerate(digits):
+        if index % 2 == parity:
+            digit *= 2
+            if digit > 9:
+                digit -= 9
+        total += digit
+    return total % 10 == 0
+
+
 def find_secrets(text: str) -> list[Finding]:
     findings: list[Finding] = []
     for rule_id, pattern in SECRET_PATTERNS:
@@ -41,6 +56,8 @@ def find_pii(text: str) -> list[Finding]:
     findings: list[Finding] = []
     for rule_id, pattern in PII_PATTERNS:
         for match in pattern.finditer(text):
+            if rule_id == "pii.credit_card" and not _passes_luhn(match.group()):
+                continue
             findings.append(
                 Finding(
                     rule_id=rule_id,
