@@ -4,6 +4,13 @@ from guardrail_forge.rules import PatternRule, RuleEngine
 
 PROMPT_INJECTION_RULES = (
     PatternRule.compile(
+        "prompt.invisible_obfuscation",
+        "prompt_obfuscation",
+        Severity.HIGH,
+        "Invisible Unicode characters may conceal instructions",
+        "[\\u200b\\u200c\\u200d\\u2060\\ufeff]",
+    ),
+    PatternRule.compile(
         "prompt.ignore_instructions",
         "prompt_injection",
         Severity.CRITICAL,
