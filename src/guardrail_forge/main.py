@@ -1,9 +1,11 @@
 from time import perf_counter
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, status
+from fastapi.responses import JSONResponse
 
 from guardrail_forge.auth import require_api_key
+from guardrail_forge.config import get_settings
 from guardrail_forge.models import (
     BatchScanRequest,
     BatchScanResponse,
@@ -22,9 +24,19 @@ app = FastAPI(title="GuardRail Forge", version="0.1.0")
 async def request_context(request: Request, call_next):
     request_id = request.headers.get("X-Request-ID") or str(uuid4())
     started = perf_counter()
-    response = await call_next(request)
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > get_settings().max_request_bytes:
+        response = JSONResponse(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            content={"detail": "Request body too large"},
+        )
+    else:
+        response = await call_next(request)
     response.headers["X-Request-ID"] = request_id
     response.headers["Server-Timing"] = f'app;dur={(perf_counter() - started) * 1000:.2f}'
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
     return response
 
 
