@@ -45,3 +45,15 @@ class BatchScanResponse(BaseModel):
     safe: bool
     results: list[ScanResponse]
 
+
+class EvaluationRequest(ScanRequest):
+    policy_name: str = Field(default="custom", min_length=1, max_length=64)
+    block_at: Severity = Severity.HIGH
+    blocked_categories: set[str] = Field(default_factory=set, max_length=20)
+
+
+class EvaluationResponse(BaseModel):
+    policy_name: str
+    allowed: bool
+    scan: ScanResponse
+
