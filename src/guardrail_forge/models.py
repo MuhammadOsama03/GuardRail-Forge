@@ -10,6 +10,11 @@ class Severity(StrEnum):
     CRITICAL = "critical"
 
 
+class Action(StrEnum):
+    ALLOW = "allow"
+    BLOCK = "block"
+
+
 class ScanRequest(BaseModel):
     text: str = Field(min_length=1, max_length=100_000)
     source: str = Field(default="user", max_length=64)
@@ -26,6 +31,8 @@ class Finding(BaseModel):
 
 class ScanResponse(BaseModel):
     safe: bool
+    action: Action
+    risk_score: int = Field(ge=0, le=100)
     findings: list[Finding]
     redacted_text: str
 
