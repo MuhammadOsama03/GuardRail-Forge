@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 
 from guardrail_forge.audit import AuditRecord, AuditSummary
@@ -102,4 +103,11 @@ class AuditStore:
             ),
             category_counts=dict(sorted(category_counts.items())),
         )
+
+    def purge_before(self, cutoff: datetime) -> int:
+        with self.connect() as connection:
+            cursor = connection.execute(
+                "DELETE FROM audit_records WHERE created_at < ?", (cutoff.isoformat(),)
+            )
+            return cursor.rowcount
 

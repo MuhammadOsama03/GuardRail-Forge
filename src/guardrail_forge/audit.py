@@ -43,3 +43,8 @@ class AuditSummary(BaseModel):
     average_risk_score: float = Field(ge=0, le=100)
     category_counts: dict[str, int]
 
+
+class AuditPurgeResult(BaseModel):
+    deleted: int = Field(ge=0)
+    cutoff: datetime
+

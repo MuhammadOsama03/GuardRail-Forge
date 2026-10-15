@@ -1,4 +1,5 @@
 from time import perf_counter
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
@@ -7,7 +8,7 @@ from fastapi.responses import JSONResponse
 from guardrail_forge.auth import require_api_key
 from guardrail_forge.config import get_settings
 from guardrail_forge import __version__
-from guardrail_forge.audit import AuditPage, AuditRecord, AuditSummary
+from guardrail_forge.audit import AuditPage, AuditPurgeResult, AuditRecord, AuditSummary
 from guardrail_forge.storage import AuditStore
 from guardrail_forge.models import (
     BatchScanRequest,
@@ -132,4 +133,14 @@ def get_audit(record_id: str, store: AuditStore = Depends(get_audit_store)) -> A
 @app.get("/v1/audits-summary", response_model=AuditSummary, dependencies=[Depends(require_api_key)])
 def audit_summary(store: AuditStore = Depends(get_audit_store)) -> AuditSummary:
     return store.summary()
+
+
+@app.delete("/v1/audits", response_model=AuditPurgeResult, dependencies=[Depends(require_api_key)])
+def purge_audits(
+    older_than_days: int = 30,
+    store: AuditStore = Depends(get_audit_store),
+) -> AuditPurgeResult:
+    older_than_days = min(max(older_than_days, 1), 3650)
+    cutoff = datetime.now(UTC) - timedelta(days=older_than_days)
+    return AuditPurgeResult(deleted=store.purge_before(cutoff), cutoff=cutoff)
 

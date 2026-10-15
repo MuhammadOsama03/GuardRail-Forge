@@ -1,3 +1,5 @@
+from datetime import UTC, datetime, timedelta
+
 from guardrail_forge.audit import AuditRecord
 from guardrail_forge.models import Action
 from guardrail_forge.storage import AuditStore
@@ -53,3 +55,16 @@ def test_store_summarizes_security_activity(tmp_path) -> None:
     assert summary.blocked_scans == 1
     assert summary.average_risk_score == 50
     assert summary.category_counts == {"prompt_injection": 1}
+
+
+def test_store_purges_only_records_before_cutoff(tmp_path) -> None:
+    store = AuditStore(tmp_path / "audit.db")
+    old = AuditRecord(created_at=datetime.now(UTC) - timedelta(days=60), source="old",
+                      safe=True, action=Action.ALLOW, risk_score=0, finding_count=0,
+                      categories=[], findings=[])
+    current = AuditRecord(source="current", safe=True, action=Action.ALLOW, risk_score=0,
+                          finding_count=0, categories=[], findings=[])
+    store.save(old)
+    store.save(current)
+    assert store.purge_before(datetime.now(UTC) - timedelta(days=30)) == 1
+    assert store.get(current.id) is not None
