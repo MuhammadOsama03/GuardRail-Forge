@@ -1,7 +1,7 @@
 import sqlite3
 from pathlib import Path
 
-from guardrail_forge.audit import AuditRecord
+from guardrail_forge.audit import AuditRecord, AuditSummary
 
 
 class AuditStore:
@@ -84,4 +84,22 @@ class AuditStore:
                 f"SELECT COUNT(*) FROM audit_records{where}", parameters
             ).fetchone()[0]
         return [AuditRecord.model_validate_json(row["payload"]) for row in rows], total
+
+    def summary(self) -> AuditSummary:
+        with self.connect() as connection:
+            rows = connection.execute("SELECT payload FROM audit_records").fetchall()
+        records = [AuditRecord.model_validate_json(row["payload"]) for row in rows]
+        category_counts: dict[str, int] = {}
+        for record in records:
+            for category in record.categories:
+                category_counts[category] = category_counts.get(category, 0) + 1
+        return AuditSummary(
+            total_scans=len(records),
+            blocked_scans=sum(not record.safe for record in records),
+            average_risk_score=(
+                round(sum(record.risk_score for record in records) / len(records), 2)
+                if records else 0
+            ),
+            category_counts=dict(sorted(category_counts.items())),
+        )
 

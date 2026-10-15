@@ -40,3 +40,16 @@ def test_store_filters_by_verdict_source_and_risk(tmp_path) -> None:
     page, total = store.list(safe=False, source="sdk", min_risk=50)
     assert total == 1
     assert page[0].source == "sdk"
+
+
+def test_store_summarizes_security_activity(tmp_path) -> None:
+    store = AuditStore(tmp_path / "audit.db")
+    store.save(AuditRecord(source="sdk", safe=False, action=Action.BLOCK, risk_score=80,
+                           finding_count=0, categories=["prompt_injection"], findings=[]))
+    store.save(AuditRecord(source="web", safe=True, action=Action.ALLOW, risk_score=20,
+                           finding_count=0, categories=[], findings=[]))
+    summary = store.summary()
+    assert summary.total_scans == 2
+    assert summary.blocked_scans == 1
+    assert summary.average_risk_score == 50
+    assert summary.category_counts == {"prompt_injection": 1}

@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from guardrail_forge.auth import require_api_key
 from guardrail_forge.config import get_settings
 from guardrail_forge import __version__
-from guardrail_forge.audit import AuditPage, AuditRecord
+from guardrail_forge.audit import AuditPage, AuditRecord, AuditSummary
 from guardrail_forge.storage import AuditStore
 from guardrail_forge.models import (
     BatchScanRequest,
@@ -127,4 +127,9 @@ def get_audit(record_id: str, store: AuditStore = Depends(get_audit_store)) -> A
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Audit record not found")
     return record
+
+
+@app.get("/v1/audits-summary", response_model=AuditSummary, dependencies=[Depends(require_api_key)])
+def audit_summary(store: AuditStore = Depends(get_audit_store)) -> AuditSummary:
+    return store.summary()
 

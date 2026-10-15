@@ -36,3 +36,10 @@ class AuditPage(BaseModel):
     limit: int = Field(ge=1)
     offset: int = Field(ge=0)
 
+
+class AuditSummary(BaseModel):
+    total_scans: int = Field(ge=0)
+    blocked_scans: int = Field(ge=0)
+    average_risk_score: float = Field(ge=0, le=100)
+    category_counts: dict[str, int]
+
