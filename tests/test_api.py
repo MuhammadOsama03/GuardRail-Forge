@@ -47,3 +47,13 @@ def test_evaluate_applies_custom_policy_threshold() -> None:
     assert response.json()["policy_name"] == "critical-only"
     assert response.json()["allowed"] is True
     assert response.json()["scan"]["action"] == "block"
+
+
+def test_get_audit_returns_record_and_404(tmp_path) -> None:
+    store = AuditStore(tmp_path / "audit.db")
+    app.dependency_overrides[get_audit_store] = lambda: store
+    client.post("/v1/scan", json={"text": "hello"})
+    record_id = store.list()[0][0].id
+    assert client.get(f"/v1/audits/{record_id}").status_code == 200
+    assert client.get("/v1/audits/missing").status_code == 404
+    app.dependency_overrides.clear()

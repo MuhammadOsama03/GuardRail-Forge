@@ -1,7 +1,7 @@
 from time import perf_counter
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
 from guardrail_forge.auth import require_api_key
@@ -119,4 +119,12 @@ def list_audits(
         limit=limit, offset=offset, safe=safe, source=source, min_risk=min_risk
     )
     return AuditPage(items=items, total=total, limit=limit, offset=offset)
+
+
+@app.get("/v1/audits/{record_id}", response_model=AuditRecord, dependencies=[Depends(require_api_key)])
+def get_audit(record_id: str, store: AuditStore = Depends(get_audit_store)) -> AuditRecord:
+    record = store.get(record_id)
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Audit record not found")
+    return record
 
