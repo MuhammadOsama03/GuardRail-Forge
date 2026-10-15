@@ -72,6 +72,15 @@ def health() -> dict[str, str]:
     return {"status": "ok", "service": "guardrail-forge"}
 
 
+@app.get("/ready")
+def ready(store: AuditStore = Depends(get_audit_store)) -> JSONResponse:
+    available = store.is_ready()
+    return JSONResponse(
+        status_code=status.HTTP_200_OK if available else status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"status": "ready" if available else "unavailable", "database": available},
+    )
+
+
 @app.get("/version")
 def version() -> dict[str, str]:
     return {"version": __version__}

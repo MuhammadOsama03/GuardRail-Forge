@@ -111,3 +111,10 @@ class AuditStore:
             )
             return cursor.rowcount
 
+    def is_ready(self) -> bool:
+        try:
+            with self.connect() as connection:
+                return connection.execute("SELECT 1").fetchone()[0] == 1
+        except sqlite3.Error:
+            return False
+

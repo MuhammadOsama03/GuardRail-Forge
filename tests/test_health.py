@@ -1,6 +1,8 @@
 from fastapi.testclient import TestClient
 
 from guardrail_forge.main import app
+from guardrail_forge.main import get_audit_store
+from guardrail_forge.storage import AuditStore
 
 
 def test_health() -> None:
@@ -20,6 +22,14 @@ def test_preserves_client_request_id() -> None:
 
 def test_reports_service_version() -> None:
     assert TestClient(app).get("/version").json() == {"version": "0.2.0"}
+
+
+def test_readiness_checks_audit_database(tmp_path) -> None:
+    app.dependency_overrides[get_audit_store] = lambda: AuditStore(tmp_path / "audit.db")
+    response = TestClient(app).get("/ready")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ready", "database": True}
+    app.dependency_overrides.clear()
 
 
 def test_rejects_oversized_declared_body() -> None:
