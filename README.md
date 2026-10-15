@@ -15,6 +15,8 @@ The API is available at `http://localhost:8000`, with interactive documentation 
 
 Version 0.2 adds obfuscation and role-delimiter detection, broader cloud-secret coverage, checksum-aware payment-card detection, overlap-safe redaction, aggregate risk scores, and custom policy evaluation.
 
+Version 0.3 adds a durable SQLite audit trail with filtered pagination, record lookup, activity summaries, retention cleanup, JSON Lines export, and database-aware readiness reporting.
+
 ## Scan content
 
 ```bash
@@ -44,3 +46,14 @@ Pattern rules are deterministic and explainable. They are an initial protection 
 Use `POST /v1/evaluate` to apply a caller-selected severity threshold and blocked-category set. The response keeps the scanner's baseline recommendation separate from the custom policy verdict, making policy decisions explicit and auditable.
 
 Requests are limited to 250 KB by default. Override the limit with `GUARDRAIL_MAX_REQUEST_BYTES` when necessary.
+
+## Audit operations
+
+Every scan and policy evaluation records security metadata without retaining the submitted text. Configure storage with `GUARDRAIL_DATABASE_PATH`.
+
+- `GET /v1/audits` lists records and accepts `safe`, `source`, `min_risk`, `limit`, and `offset` filters.
+- `GET /v1/audits/{record_id}` retrieves one record.
+- `GET /v1/audits-summary` reports scan, block, risk, and category totals.
+- `GET /v1/audits-export` downloads chronological JSON Lines.
+- `DELETE /v1/audits?older_than_days=30` removes expired records.
+- `GET /ready` verifies that the configured database is reachable.
