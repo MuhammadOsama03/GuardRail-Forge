@@ -1,8 +1,20 @@
 from fastapi.testclient import TestClient
 
 from guardrail_forge.main import app
+from guardrail_forge.main import get_audit_store
+from guardrail_forge.storage import AuditStore
 
 client = TestClient(app)
+
+
+def test_scan_persists_audit_record(tmp_path) -> None:
+    store = AuditStore(tmp_path / "audit.db")
+    app.dependency_overrides[get_audit_store] = lambda: store
+    response = client.post("/v1/scan", json={"text": "hello", "source": "sdk"})
+    assert response.status_code == 200
+    with store.connect() as connection:
+        assert connection.execute("SELECT source FROM audit_records").fetchone()["source"] == "sdk"
+    app.dependency_overrides.clear()
 
 
 def test_scan_endpoint_blocks_injection() -> None:

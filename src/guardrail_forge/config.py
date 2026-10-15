@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     api_key: str | None = None
     max_request_bytes: int = Field(default=250_000, ge=1_024, le=10_000_000)
+    database_path: str = "guardrail.db"
 
 
 @lru_cache

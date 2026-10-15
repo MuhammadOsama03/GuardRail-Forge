@@ -7,6 +7,8 @@ from fastapi.responses import JSONResponse
 from guardrail_forge.auth import require_api_key
 from guardrail_forge.config import get_settings
 from guardrail_forge import __version__
+from guardrail_forge.audit import AuditRecord
+from guardrail_forge.storage import AuditStore
 from guardrail_forge.models import (
     BatchScanRequest,
     BatchScanResponse,
@@ -19,6 +21,14 @@ from guardrail_forge.policy import SecurityPolicy
 from guardrail_forge.scanner import scan_text
 
 app = FastAPI(title="GuardRail Forge", version=__version__)
+
+
+def get_audit_store() -> AuditStore:
+    return AuditStore(get_settings().database_path)
+
+
+def record_scan(store: AuditStore, source: str, result: ScanResponse) -> None:
+    store.save(AuditRecord.from_scan(source, result))
 
 
 def _parse_content_length(value: str | None) -> int | None:
@@ -67,19 +77,24 @@ def version() -> dict[str, str]:
 
 
 @app.post("/v1/scan", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
-def scan(payload: ScanRequest) -> ScanResponse:
-    return scan_text(payload.text)
+def scan(payload: ScanRequest, store: AuditStore = Depends(get_audit_store)) -> ScanResponse:
+    result = scan_text(payload.text)
+    record_scan(store, payload.source, result)
+    return result
 
 
 @app.post("/v1/scan/batch", response_model=BatchScanResponse, dependencies=[Depends(require_api_key)])
-def scan_batch(payload: BatchScanRequest) -> BatchScanResponse:
+def scan_batch(payload: BatchScanRequest, store: AuditStore = Depends(get_audit_store)) -> BatchScanResponse:
     results = [scan_text(item.text) for item in payload.items]
+    for item, result in zip(payload.items, results, strict=True):
+        record_scan(store, item.source, result)
     return BatchScanResponse(safe=all(result.safe for result in results), results=results)
 
 
 @app.post("/v1/evaluate", response_model=EvaluationResponse, dependencies=[Depends(require_api_key)])
-def evaluate(payload: EvaluationRequest) -> EvaluationResponse:
+def evaluate(payload: EvaluationRequest, store: AuditStore = Depends(get_audit_store)) -> EvaluationResponse:
     result = scan_text(payload.text)
+    record_scan(store, payload.source, result)
     policy = SecurityPolicy(
         name=payload.policy_name,
         block_at=payload.block_at,

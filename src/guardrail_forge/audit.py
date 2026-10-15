@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from guardrail_forge.models import Action, Finding
+from guardrail_forge.models import Action, Finding, ScanResponse
 
 
 class AuditRecord(BaseModel):
@@ -16,6 +16,18 @@ class AuditRecord(BaseModel):
     finding_count: int = Field(ge=0)
     categories: list[str]
     findings: list[Finding]
+
+    @classmethod
+    def from_scan(cls, source: str, scan: ScanResponse) -> "AuditRecord":
+        return cls(
+            source=source,
+            safe=scan.safe,
+            action=scan.action,
+            risk_score=scan.risk_score,
+            finding_count=len(scan.findings),
+            categories=sorted({finding.category for finding in scan.findings}),
+            findings=scan.findings,
+        )
 
 
 class AuditPage(BaseModel):
