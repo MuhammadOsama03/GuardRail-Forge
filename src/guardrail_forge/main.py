@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from guardrail_forge.auth import require_api_key
 from guardrail_forge.config import get_settings
 from guardrail_forge import __version__
-from guardrail_forge.audit import AuditRecord
+from guardrail_forge.audit import AuditPage, AuditRecord
 from guardrail_forge.storage import AuditStore
 from guardrail_forge.models import (
     BatchScanRequest,
@@ -101,4 +101,16 @@ def evaluate(payload: EvaluationRequest, store: AuditStore = Depends(get_audit_s
         blocked_categories=frozenset(payload.blocked_categories),
     )
     return EvaluationResponse(policy_name=policy.name, allowed=policy.allows(result.findings), scan=result)
+
+
+@app.get("/v1/audits", response_model=AuditPage, dependencies=[Depends(require_api_key)])
+def list_audits(
+    limit: int = 50,
+    offset: int = 0,
+    store: AuditStore = Depends(get_audit_store),
+) -> AuditPage:
+    limit = min(max(limit, 1), 100)
+    offset = max(offset, 0)
+    items, total = store.list(limit=limit, offset=offset)
+    return AuditPage(items=items, total=total, limit=limit, offset=offset)
 

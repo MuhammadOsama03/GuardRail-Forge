@@ -15,3 +15,17 @@ def test_store_round_trips_audit_record(tmp_path) -> None:
 
 def test_store_returns_none_for_unknown_record(tmp_path) -> None:
     assert AuditStore(tmp_path / "audit.db").get("missing") is None
+
+
+def test_store_lists_newest_records_with_pagination(tmp_path) -> None:
+    store = AuditStore(tmp_path / "audit.db")
+    records = [
+        AuditRecord(source=str(index), safe=True, action=Action.ALLOW, risk_score=0,
+                    finding_count=0, categories=[], findings=[])
+        for index in range(3)
+    ]
+    for record in records:
+        store.save(record)
+    page, total = store.list(limit=2, offset=1)
+    assert total == 3
+    assert len(page) == 2

@@ -55,3 +55,12 @@ class AuditStore:
             ).fetchone()
         return AuditRecord.model_validate_json(row["payload"]) if row else None
 
+    def list(self, limit: int = 50, offset: int = 0) -> tuple[list[AuditRecord], int]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT payload FROM audit_records ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                (limit, offset),
+            ).fetchall()
+            total = connection.execute("SELECT COUNT(*) FROM audit_records").fetchone()[0]
+        return [AuditRecord.model_validate_json(row["payload"]) for row in rows], total
+
