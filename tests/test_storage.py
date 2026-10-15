@@ -68,3 +68,13 @@ def test_store_purges_only_records_before_cutoff(tmp_path) -> None:
     store.save(current)
     assert store.purge_before(datetime.now(UTC) - timedelta(days=30)) == 1
     assert store.get(current.id) is not None
+
+
+def test_store_exports_chronological_json_lines(tmp_path) -> None:
+    store = AuditStore(tmp_path / "audit.db")
+    record = AuditRecord(source="sdk", safe=True, action=Action.ALLOW, risk_score=0,
+                         finding_count=0, categories=[], findings=[])
+    store.save(record)
+    lines = store.export_jsonl().splitlines()
+    assert len(lines) == 1
+    assert record.id in lines[0]

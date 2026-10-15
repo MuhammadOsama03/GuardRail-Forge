@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from guardrail_forge.auth import require_api_key
 from guardrail_forge.config import get_settings
@@ -152,4 +152,13 @@ def purge_audits(
     older_than_days = min(max(older_than_days, 1), 3650)
     cutoff = datetime.now(UTC) - timedelta(days=older_than_days)
     return AuditPurgeResult(deleted=store.purge_before(cutoff), cutoff=cutoff)
+
+
+@app.get("/v1/audits-export", response_class=PlainTextResponse, dependencies=[Depends(require_api_key)])
+def export_audits(store: AuditStore = Depends(get_audit_store)) -> PlainTextResponse:
+    return PlainTextResponse(
+        store.export_jsonl(),
+        media_type="application/x-ndjson",
+        headers={"Content-Disposition": 'attachment; filename="guardrail-audits.jsonl"'},
+    )
 

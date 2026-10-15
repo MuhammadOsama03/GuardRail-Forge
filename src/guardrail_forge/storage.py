@@ -118,3 +118,10 @@ class AuditStore:
         except sqlite3.Error:
             return False
 
+    def export_jsonl(self) -> str:
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT payload FROM audit_records ORDER BY created_at ASC"
+            ).fetchall()
+        return "".join(f'{row["payload"]}\n' for row in rows)
+
