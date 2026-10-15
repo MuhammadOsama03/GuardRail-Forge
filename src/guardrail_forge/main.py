@@ -107,10 +107,16 @@ def evaluate(payload: EvaluationRequest, store: AuditStore = Depends(get_audit_s
 def list_audits(
     limit: int = 50,
     offset: int = 0,
+    safe: bool | None = None,
+    source: str | None = None,
+    min_risk: int | None = None,
     store: AuditStore = Depends(get_audit_store),
 ) -> AuditPage:
     limit = min(max(limit, 1), 100)
     offset = max(offset, 0)
-    items, total = store.list(limit=limit, offset=offset)
+    min_risk = min(max(min_risk, 0), 100) if min_risk is not None else None
+    items, total = store.list(
+        limit=limit, offset=offset, safe=safe, source=source, min_risk=min_risk
+    )
     return AuditPage(items=items, total=total, limit=limit, offset=offset)
 

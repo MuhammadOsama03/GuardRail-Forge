@@ -55,12 +55,33 @@ class AuditStore:
             ).fetchone()
         return AuditRecord.model_validate_json(row["payload"]) if row else None
 
-    def list(self, limit: int = 50, offset: int = 0) -> tuple[list[AuditRecord], int]:
+    def list(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        safe: bool | None = None,
+        source: str | None = None,
+        min_risk: int | None = None,
+    ) -> tuple[list[AuditRecord], int]:
+        clauses: list[str] = []
+        parameters: list[object] = []
+        if safe is not None:
+            clauses.append("safe = ?")
+            parameters.append(int(safe))
+        if source is not None:
+            clauses.append("source = ?")
+            parameters.append(source)
+        if min_risk is not None:
+            clauses.append("risk_score >= ?")
+            parameters.append(min_risk)
+        where = f" WHERE {' AND '.join(clauses)}" if clauses else ""
         with self.connect() as connection:
             rows = connection.execute(
-                "SELECT payload FROM audit_records ORDER BY created_at DESC LIMIT ? OFFSET ?",
-                (limit, offset),
+                f"SELECT payload FROM audit_records{where} ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                (*parameters, limit, offset),
             ).fetchall()
-            total = connection.execute("SELECT COUNT(*) FROM audit_records").fetchone()[0]
+            total = connection.execute(
+                f"SELECT COUNT(*) FROM audit_records{where}", parameters
+            ).fetchone()[0]
         return [AuditRecord.model_validate_json(row["payload"]) for row in rows], total
 

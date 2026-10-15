@@ -29,3 +29,14 @@ def test_store_lists_newest_records_with_pagination(tmp_path) -> None:
     page, total = store.list(limit=2, offset=1)
     assert total == 3
     assert len(page) == 2
+
+
+def test_store_filters_by_verdict_source_and_risk(tmp_path) -> None:
+    store = AuditStore(tmp_path / "audit.db")
+    store.save(AuditRecord(source="sdk", safe=False, action=Action.BLOCK, risk_score=80,
+                           finding_count=0, categories=[], findings=[]))
+    store.save(AuditRecord(source="web", safe=True, action=Action.ALLOW, risk_score=0,
+                           finding_count=0, categories=[], findings=[]))
+    page, total = store.list(safe=False, source="sdk", min_risk=50)
+    assert total == 1
+    assert page[0].source == "sdk"
