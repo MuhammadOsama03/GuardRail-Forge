@@ -13,7 +13,7 @@ from guardrail_forge.audit import AuditPage, AuditPurgeResult, AuditRecord, Audi
 from guardrail_forge.storage import AuditStore
 from guardrail_forge.rate_limit import SlidingWindowRateLimiter
 from guardrail_forge.benchmarks import BUILTIN_SUITES
-from guardrail_forge.evaluations import EvaluationReport, EvaluationSuiteSummary, run_suite
+from guardrail_forge.evaluations import EvaluationReport, EvaluationSuite, EvaluationSuiteSummary, run_suite
 from guardrail_forge.models import (
     BatchScanRequest,
     BatchScanResponse,
@@ -197,6 +197,15 @@ def list_evaluations() -> list[EvaluationSuiteSummary]:
         )
         for suite in BUILTIN_SUITES.values()
     ]
+
+
+@app.post(
+    "/v1/evaluations/run",
+    response_model=EvaluationReport,
+    dependencies=[Depends(require_api_key)],
+)
+def run_custom_evaluation(suite: EvaluationSuite) -> EvaluationReport:
+    return run_suite(suite)
 
 
 @app.post(
