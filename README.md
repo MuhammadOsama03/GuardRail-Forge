@@ -17,6 +17,8 @@ Version 0.2 adds obfuscation and role-delimiter detection, broader cloud-secret 
 
 Version 0.3 adds a durable SQLite audit trail with filtered pagination, record lookup, activity summaries, retention cleanup, JSON Lines export, and database-aware readiness reporting.
 
+Version 0.4 adds per-client sliding-window rate limits and repeatable security evaluation suites for API, CLI, and CI workflows.
+
 ## Scan content
 
 ```bash
@@ -57,3 +59,15 @@ Every scan and policy evaluation records security metadata without retaining the
 - `GET /v1/audits-export` downloads chronological JSON Lines.
 - `DELETE /v1/audits?older_than_days=30` removes expired records.
 - `GET /ready` verifies that the configured database is reachable.
+
+## Security evaluation gates
+
+Run the built-in regression suite locally or in CI:
+
+```bash
+guardrail-eval --suite core-security --minimum-pass-rate 1.0
+```
+
+Use `--format markdown` for a reviewable report. The API exposes suite discovery at `GET /v1/evaluations`, built-in execution at `POST /v1/evaluations/{suite_name}/run`, caller-supplied suites at `POST /v1/evaluations/run`, and Markdown reports at `GET /v1/evaluations/{suite_name}/report`.
+
+API traffic is limited to 120 requests per client per minute by default. Set `GUARDRAIL_RATE_LIMIT_PER_MINUTE=0` to disable limiting or choose a deployment-appropriate capacity.

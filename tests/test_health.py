@@ -21,7 +21,7 @@ def test_preserves_client_request_id() -> None:
 
 
 def test_reports_service_version() -> None:
-    assert TestClient(app).get("/version").json() == {"version": "0.3.0"}
+    assert TestClient(app).get("/version").json() == {"version": "0.4.0"}
 
 
 def test_readiness_checks_audit_database(tmp_path) -> None:
