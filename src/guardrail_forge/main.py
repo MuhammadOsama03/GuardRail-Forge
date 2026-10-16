@@ -12,6 +12,8 @@ from guardrail_forge import __version__
 from guardrail_forge.audit import AuditPage, AuditPurgeResult, AuditRecord, AuditSummary
 from guardrail_forge.storage import AuditStore
 from guardrail_forge.rate_limit import SlidingWindowRateLimiter
+from guardrail_forge.benchmarks import BUILTIN_SUITES
+from guardrail_forge.evaluations import EvaluationReport, EvaluationSuiteSummary, run_suite
 from guardrail_forge.models import (
     BatchScanRequest,
     BatchScanResponse,
@@ -178,4 +180,33 @@ def export_audits(store: AuditStore = Depends(get_audit_store)) -> PlainTextResp
         media_type="application/x-ndjson",
         headers={"Content-Disposition": 'attachment; filename="guardrail-audits.jsonl"'},
     )
+
+
+@app.get(
+    "/v1/evaluations",
+    response_model=list[EvaluationSuiteSummary],
+    dependencies=[Depends(require_api_key)],
+)
+def list_evaluations() -> list[EvaluationSuiteSummary]:
+    return [
+        EvaluationSuiteSummary(
+            name=suite.name,
+            description=suite.description,
+            case_count=len(suite.cases),
+            tags=sorted({tag for case in suite.cases for tag in case.tags}),
+        )
+        for suite in BUILTIN_SUITES.values()
+    ]
+
+
+@app.post(
+    "/v1/evaluations/{suite_name}/run",
+    response_model=EvaluationReport,
+    dependencies=[Depends(require_api_key)],
+)
+def run_evaluation(suite_name: str) -> EvaluationReport:
+    suite = BUILTIN_SUITES.get(suite_name)
+    if suite is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evaluation suite not found")
+    return run_suite(suite)
 

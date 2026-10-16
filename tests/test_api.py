@@ -58,3 +58,16 @@ def test_get_audit_returns_record_and_404(tmp_path) -> None:
     assert client.get(f"/v1/audits/{record_id}").status_code == 200
     assert client.get("/v1/audits/missing").status_code == 404
     app.dependency_overrides.clear()
+
+
+def test_lists_and_runs_builtin_evaluation() -> None:
+    suites = client.get("/v1/evaluations")
+    assert suites.status_code == 200
+    assert suites.json()[0]["name"] == "core-security"
+    report = client.post("/v1/evaluations/core-security/run")
+    assert report.status_code == 200
+    assert report.json()["failed"] == 0
+
+
+def test_unknown_evaluation_returns_404() -> None:
+    assert client.post("/v1/evaluations/missing/run").status_code == 404

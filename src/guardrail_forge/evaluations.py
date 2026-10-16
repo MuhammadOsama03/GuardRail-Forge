@@ -37,6 +37,13 @@ class EvaluationReport(BaseModel):
     results: list[EvaluationCaseResult]
 
 
+class EvaluationSuiteSummary(BaseModel):
+    name: str
+    description: str
+    case_count: int
+    tags: list[str]
+
+
 def run_suite(suite: EvaluationSuite) -> EvaluationReport:
     results: list[EvaluationCaseResult] = []
     for case in suite.cases:
