@@ -2,6 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from guardrail_forge.evaluations import EvaluationCase, EvaluationSuite, run_suite
+from guardrail_forge.benchmarks import CORE_SECURITY_SUITE
 
 
 def test_suite_requires_at_least_one_case() -> None:
@@ -26,3 +27,9 @@ def test_runner_reports_passes_and_failures() -> None:
     report = run_suite(suite)
     assert (report.total, report.passed, report.failed) == (3, 2, 1)
     assert report.pass_rate == pytest.approx(2 / 3, abs=0.0001)
+
+
+def test_core_security_suite_has_no_regressions() -> None:
+    report = run_suite(CORE_SECURITY_SUITE)
+    assert report.failed == 0
+    assert report.pass_rate == 1
