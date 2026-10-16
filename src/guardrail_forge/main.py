@@ -13,7 +13,13 @@ from guardrail_forge.audit import AuditPage, AuditPurgeResult, AuditRecord, Audi
 from guardrail_forge.storage import AuditStore
 from guardrail_forge.rate_limit import SlidingWindowRateLimiter
 from guardrail_forge.benchmarks import BUILTIN_SUITES
-from guardrail_forge.evaluations import EvaluationReport, EvaluationSuite, EvaluationSuiteSummary, run_suite
+from guardrail_forge.evaluations import (
+    EvaluationReport,
+    EvaluationSuite,
+    EvaluationSuiteSummary,
+    render_markdown,
+    run_suite,
+)
 from guardrail_forge.models import (
     BatchScanRequest,
     BatchScanResponse,
@@ -218,4 +224,20 @@ def run_evaluation(suite_name: str) -> EvaluationReport:
     if suite is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evaluation suite not found")
     return run_suite(suite)
+
+
+@app.get(
+    "/v1/evaluations/{suite_name}/report",
+    response_class=PlainTextResponse,
+    dependencies=[Depends(require_api_key)],
+)
+def evaluation_report(suite_name: str) -> PlainTextResponse:
+    suite = BUILTIN_SUITES.get(suite_name)
+    if suite is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evaluation suite not found")
+    return PlainTextResponse(
+        render_markdown(run_suite(suite)),
+        media_type="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="{suite_name}-evaluation.md"'},
+    )
 

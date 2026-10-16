@@ -68,3 +68,22 @@ def run_suite(suite: EvaluationSuite) -> EvaluationReport:
         results=results,
     )
 
+
+def render_markdown(report: EvaluationReport) -> str:
+    lines = [
+        f"# Evaluation: {report.suite_name}",
+        "",
+        f"- Passed: {report.passed}/{report.total}",
+        f"- Pass rate: {report.pass_rate:.1%}",
+        "",
+        "| Case | Expected | Actual | Result | Risk |",
+        "| --- | --- | --- | --- | ---: |",
+    ]
+    for result in report.results:
+        lines.append(
+            f"| {result.case_id} | {'safe' if result.expected_safe else 'blocked'} "
+            f"| {'safe' if result.actual_safe else 'blocked'} | {'PASS' if result.passed else 'FAIL'} "
+            f"| {result.risk_score} |"
+        )
+    return "\n".join(lines) + "\n"
+
