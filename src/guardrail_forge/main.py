@@ -1,6 +1,7 @@
 from time import perf_counter
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
+from hashlib import sha256
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -10,6 +11,7 @@ from guardrail_forge.config import get_settings
 from guardrail_forge import __version__
 from guardrail_forge.audit import AuditPage, AuditPurgeResult, AuditRecord, AuditSummary
 from guardrail_forge.storage import AuditStore
+from guardrail_forge.rate_limit import SlidingWindowRateLimiter
 from guardrail_forge.models import (
     BatchScanRequest,
     BatchScanResponse,
@@ -22,6 +24,7 @@ from guardrail_forge.policy import SecurityPolicy
 from guardrail_forge.scanner import scan_text
 
 app = FastAPI(title="GuardRail Forge", version=__version__)
+rate_limiter = SlidingWindowRateLimiter(get_settings().rate_limit_per_minute)
 
 
 def get_audit_store() -> AuditStore:
@@ -46,8 +49,19 @@ def _parse_content_length(value: str | None) -> int | None:
 async def request_context(request: Request, call_next):
     request_id = request.headers.get("X-Request-ID") or str(uuid4())
     started = perf_counter()
+    decision = None
+    if request.url.path.startswith("/v1/") and rate_limiter.limit:
+        credential = request.headers.get("x-api-key")
+        identity = sha256(credential.encode()).hexdigest() if credential else (request.client.host if request.client else "unknown")
+        decision = rate_limiter.check(identity)
     content_length = _parse_content_length(request.headers.get("content-length"))
-    if content_length == -1:
+    if decision is not None and not decision.allowed:
+        response = JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={"detail": "Rate limit exceeded"},
+            headers={"Retry-After": str(decision.retry_after)},
+        )
+    elif content_length == -1:
         response = JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"detail": "Invalid Content-Length header"},
@@ -64,6 +78,9 @@ async def request_context(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
+    if decision is not None:
+        response.headers["X-RateLimit-Limit"] = str(decision.limit)
+        response.headers["X-RateLimit-Remaining"] = str(decision.remaining)
     return response
 
 
