@@ -38,6 +38,14 @@ def test_dashboard_shell_is_served() -> None:
     assert "GuardRail Forge" in response.text
 
 
+def test_dashboard_assets_are_served() -> None:
+    client = TestClient(app)
+    assert client.get("/dashboard/styles.css").status_code == 200
+    script = client.get("/dashboard/app.js")
+    assert script.status_code == 200
+    assert 'getJSON("/v1/audits-summary")' in script.text
+
+
 def test_rejects_oversized_declared_body() -> None:
     response = TestClient(app).post(
         "/v1/scan",
