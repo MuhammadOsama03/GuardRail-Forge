@@ -8,7 +8,10 @@ function cell(row, value, className = "") {
 }
 
 async function getJSON(path) {
-  const response = await fetch(path, { headers: { Accept: "application/json" } });
+  const headers = { Accept: "application/json" };
+  const apiKey = $("#api-key").value.trim();
+  if (apiKey) headers["X-API-Key"] = apiKey;
+  const response = await fetch(path, { headers });
   if (!response.ok) throw new Error(`${path} returned ${response.status}`);
   return response.json();
 }
@@ -47,4 +50,9 @@ async function refresh() {
 }
 
 $("#refresh").addEventListener("click", refresh);
+$("#api-key").value = sessionStorage.getItem("guardrail-api-key") || "";
+$("#api-key").addEventListener("change", (event) => {
+  sessionStorage.setItem("guardrail-api-key", event.target.value);
+  refresh();
+});
 refresh();
