@@ -4,11 +4,20 @@ from typing import Any
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from guardrail_forge.models import EvaluationRequest, EvaluationResponse, ScanRequest, ScanResponse
+from guardrail_forge.models import (
+    BatchScanRequest,
+    BatchScanResponse,
+    EvaluationRequest,
+    EvaluationResponse,
+    ScanRequest,
+    ScanResponse,
+)
 
 
 class GuardRailError(RuntimeError):
-    pass
+    def __init__(self, message: str, status_code: int | None = None) -> None:
+        super().__init__(message)
+        self.status_code = status_code
 
 
 class GuardRailClient:
@@ -38,7 +47,7 @@ class GuardRailClient:
             with self.opener(request, timeout=self.timeout) as response:
                 return json.loads(response.read())
         except HTTPError as error:
-            raise GuardRailError(f"GuardRail API returned HTTP {error.code}") from error
+            raise GuardRailError(f"GuardRail API returned HTTP {error.code}", error.code) from error
 
     def scan(self, text: str, source: str = "python-sdk") -> ScanResponse:
         payload = ScanRequest(text=text, source=source)
@@ -47,5 +56,11 @@ class GuardRailClient:
     def evaluate(self, request: EvaluationRequest) -> EvaluationResponse:
         return EvaluationResponse.model_validate(
             self._post("/v1/evaluate", request.model_dump(mode="json"))
+        )
+
+    def scan_batch(self, texts: list[str], source: str = "python-sdk") -> BatchScanResponse:
+        payload = BatchScanRequest(items=[ScanRequest(text=text, source=source) for text in texts])
+        return BatchScanResponse.model_validate(
+            self._post("/v1/scan/batch", payload.model_dump(mode="json"))
         )
 
