@@ -19,6 +19,8 @@ Version 0.3 adds a durable SQLite audit trail with filtered pagination, record l
 
 Version 0.4 adds per-client sliding-window rate limits and repeatable security evaluation suites for API, CLI, and CI workflows.
 
+Version 1.0 completes the first production release with an operational dashboard, Python SDK, Prometheus metrics, alert evaluation, and hardened container deployment.
+
 ## Scan content
 
 ```bash
@@ -71,3 +73,30 @@ guardrail-eval --suite core-security --minimum-pass-rate 1.0
 Use `--format markdown` for a reviewable report. The API exposes suite discovery at `GET /v1/evaluations`, built-in execution at `POST /v1/evaluations/{suite_name}/run`, caller-supplied suites at `POST /v1/evaluations/run`, and Markdown reports at `GET /v1/evaluations/{suite_name}/report`.
 
 API traffic is limited to 120 requests per client per minute by default. Set `GUARDRAIL_RATE_LIMIT_PER_MINUTE=0` to disable limiting or choose a deployment-appropriate capacity.
+
+## Operations dashboard and metrics
+
+Open `/dashboard/` for responsive audit metrics, alerts, and recent security activity. When API authentication is enabled, enter the key in the dashboard; it remains in browser session storage only.
+
+Prometheus-compatible counters are exposed at `/metrics`. Active threshold alerts are available through `GET /v1/alerts`.
+
+## Python client
+
+```python
+from guardrail_forge.client import GuardRailClient
+
+client = GuardRailClient("http://localhost:8000", api_key="your-key")
+result = client.scan("Untrusted user content")
+if not result.safe:
+    print(result.findings)
+```
+
+## Production deployment
+
+```bash
+cp .env.example .env
+# Replace GUARDRAIL_API_KEY with a strong random value.
+docker compose up --build -d
+```
+
+The Compose deployment runs without Linux capabilities, uses a read-only root filesystem, prevents privilege escalation, persists audit data in a named volume, and performs database-aware health checks.

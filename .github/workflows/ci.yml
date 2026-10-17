@@ -27,6 +27,8 @@ jobs:
       - name: Enforce security evaluation baseline
         run: guardrail-eval --suite core-security --minimum-pass-rate 1.0
       - run: python -m compileall -q src
+      - name: Validate dashboard JavaScript
+        run: node --check src/guardrail_forge/static/app.js
 
   container:
     runs-on: ubuntu-latest
