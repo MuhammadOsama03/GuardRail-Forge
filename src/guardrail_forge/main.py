@@ -5,6 +5,8 @@ from hashlib import sha256
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from guardrail_forge.auth import require_api_key
 from guardrail_forge.config import get_settings
@@ -34,6 +36,7 @@ from guardrail_forge.policy import SecurityPolicy
 from guardrail_forge.scanner import scan_text
 
 app = FastAPI(title="GuardRail Forge", version=__version__)
+app.mount("/dashboard", StaticFiles(directory=Path(__file__).with_name("static"), html=True), name="dashboard")
 rate_limiter = SlidingWindowRateLimiter(get_settings().rate_limit_per_minute)
 metrics = MetricsRegistry()
 

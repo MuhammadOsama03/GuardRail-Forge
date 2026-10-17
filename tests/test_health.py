@@ -32,6 +32,12 @@ def test_readiness_checks_audit_database(tmp_path) -> None:
     app.dependency_overrides.clear()
 
 
+def test_dashboard_shell_is_served() -> None:
+    response = TestClient(app).get("/dashboard/")
+    assert response.status_code == 200
+    assert "GuardRail Forge" in response.text
+
+
 def test_rejects_oversized_declared_body() -> None:
     response = TestClient(app).post(
         "/v1/scan",
