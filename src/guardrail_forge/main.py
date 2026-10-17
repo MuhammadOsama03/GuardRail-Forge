@@ -21,6 +21,7 @@ from guardrail_forge.evaluations import (
     run_suite,
 )
 from guardrail_forge.metrics import MetricsRegistry, render_prometheus
+from guardrail_forge.alerts import ActiveAlert, evaluate_alerts
 from guardrail_forge.models import (
     BatchScanRequest,
     BatchScanResponse,
@@ -117,6 +118,11 @@ def version() -> dict[str, str]:
 @app.get("/metrics", response_class=PlainTextResponse)
 def prometheus_metrics() -> PlainTextResponse:
     return PlainTextResponse(render_prometheus(metrics.snapshot()), media_type="text/plain")
+
+
+@app.get("/v1/alerts", response_model=list[ActiveAlert], dependencies=[Depends(require_api_key)])
+def active_alerts() -> list[ActiveAlert]:
+    return evaluate_alerts(metrics.snapshot())
 
 
 @app.post("/v1/scan", response_model=ScanResponse, dependencies=[Depends(require_api_key)])

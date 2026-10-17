@@ -86,3 +86,9 @@ def test_runs_caller_supplied_evaluation_suite() -> None:
     )
     assert response.status_code == 200
     assert response.json()["pass_rate"] == 1
+
+
+def test_alert_endpoint_returns_a_list() -> None:
+    response = client.get("/v1/alerts")
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
