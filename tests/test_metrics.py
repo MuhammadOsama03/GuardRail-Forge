@@ -1,4 +1,4 @@
-from guardrail_forge.metrics import MetricsRegistry
+from guardrail_forge.metrics import MetricsRegistry, render_prometheus
 from guardrail_forge.scanner import scan_text
 
 
@@ -11,3 +11,11 @@ def test_registry_tracks_scans_blocks_and_categories() -> None:
     assert snapshot.blocked_total == 1
     assert snapshot.findings_total == 1
     assert snapshot.categories == {"prompt_injection": 1}
+
+
+def test_prometheus_output_exposes_counters() -> None:
+    registry = MetricsRegistry()
+    registry.record_scan(scan_text("hello"))
+    output = render_prometheus(registry.snapshot())
+    assert "guardrail_scans_total 1" in output
+    assert "guardrail_blocked_total 0" in output

@@ -37,3 +37,17 @@ class MetricsRegistry:
                 categories=dict(sorted(self._categories.items())),
             )
 
+
+def render_prometheus(snapshot: MetricsSnapshot) -> str:
+    lines = [
+        "# TYPE guardrail_scans_total counter",
+        f"guardrail_scans_total {snapshot.scans_total}",
+        "# TYPE guardrail_blocked_total counter",
+        f"guardrail_blocked_total {snapshot.blocked_total}",
+        "# TYPE guardrail_findings_total counter",
+        f"guardrail_findings_total {snapshot.findings_total}",
+    ]
+    for category, count in snapshot.categories.items():
+        lines.append(f'guardrail_findings_by_category_total{{category="{category}"}} {count}')
+    return "\n".join(lines) + "\n"
+

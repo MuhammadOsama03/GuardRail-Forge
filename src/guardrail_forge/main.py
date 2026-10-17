@@ -20,6 +20,7 @@ from guardrail_forge.evaluations import (
     render_markdown,
     run_suite,
 )
+from guardrail_forge.metrics import MetricsRegistry, render_prometheus
 from guardrail_forge.models import (
     BatchScanRequest,
     BatchScanResponse,
@@ -33,6 +34,7 @@ from guardrail_forge.scanner import scan_text
 
 app = FastAPI(title="GuardRail Forge", version=__version__)
 rate_limiter = SlidingWindowRateLimiter(get_settings().rate_limit_per_minute)
+metrics = MetricsRegistry()
 
 
 def get_audit_store() -> AuditStore:
@@ -41,6 +43,7 @@ def get_audit_store() -> AuditStore:
 
 def record_scan(store: AuditStore, source: str, result: ScanResponse) -> None:
     store.save(AuditRecord.from_scan(source, result))
+    metrics.record_scan(result)
 
 
 def _parse_content_length(value: str | None) -> int | None:
@@ -109,6 +112,11 @@ def ready(store: AuditStore = Depends(get_audit_store)) -> JSONResponse:
 @app.get("/version")
 def version() -> dict[str, str]:
     return {"version": __version__}
+
+
+@app.get("/metrics", response_class=PlainTextResponse)
+def prometheus_metrics() -> PlainTextResponse:
+    return PlainTextResponse(render_prometheus(metrics.snapshot()), media_type="text/plain")
 
 
 @app.post("/v1/scan", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
