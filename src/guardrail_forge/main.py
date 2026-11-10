@@ -118,7 +118,7 @@ def version() -> dict[str, str]:
     return {"version": __version__}
 
 
-@app.get("/metrics", response_class=PlainTextResponse)
+@app.get("/metrics", response_class=PlainTextResponse, dependencies=[Depends(require_api_key)])
 def prometheus_metrics() -> PlainTextResponse:
     return PlainTextResponse(render_prometheus(metrics.snapshot()), media_type="text/plain")
 
